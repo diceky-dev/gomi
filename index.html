@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>ごみカレンダー</title>
+  <meta name="theme-color" content="#ffffff">
+  <style>
+    :root{
+      --bg:#f5f6f8; --card:#ffffff; --text:#1f2937; --muted:#6b7280; --line:#e5e7eb;
+      --accent:#111827; --holiday:#dc2626;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:860px;margin:0 auto;padding:14px 14px 20px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+    h1{font-size:22px;margin:0}
+    .sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .pill{font-size:12px;background:#fff;border:1px solid var(--line);padding:8px 10px;border-radius:999px;white-space:nowrap}
+    .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .section{margin-top:12px}
+    .label{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .big-date{font-size:16px;font-weight:700}
+    .big-type{font-size:30px;font-weight:800;line-height:1.2;margin-top:6px}
+    .meta{font-size:13px;color:var(--muted);margin-top:6px}
+    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    button,select{appearance:none;border:1px solid var(--line);background:#fff;color:var(--text);border-radius:12px;padding:10px 12px;font-size:14px;white-space:nowrap}
+    button{font-weight:600}
+    button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .dayshift{display:flex;gap:8px;align-items:center}
+    .centerlabel{font-weight:700;min-width:110px;text-align:center}
+    .next-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .next-item{border:1px solid var(--line);border-radius:14px;padding:10px;background:#fff;min-width:0}
+    .next-name{font-size:11px;color:var(--muted);margin-bottom:4px}
+    .next-date{font-size:14px;font-weight:700;line-height:1.3;word-break:break-word}
+    .calendar-head{display:flex;flex-direction:column;gap:12px;margin-bottom:10px}
+    .calendar-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+    .month-title{font-weight:800;font-size:18px}
+    .calendar-top-right{display:flex;justify-content:flex-end;flex:0 0 auto;min-width:84px}
+    .calendar-actions{display:flex;gap:8px;align-items:center;flex-wrap:nowrap}
+    .calendar-actions button,.calendar-actions select{padding:9px 10px;font-size:13px}
+    .legend{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{font-size:12px;padding:6px 9px;border-radius:999px;color:#111;background:#fff;border:1px solid var(--line)}
+    .burn{background:rgba(239,68,68,.10)}
+    .recycle{background:rgba(59,130,246,.10)}
+    .pet{background:rgba(16,185,129,.12)}
+    .nonburn{background:rgba(245,158,11,.14)}
+    .off{background:rgba(156,163,175,.12);color:#4b5563}
+    table{width:100%;border-collapse:collapse;table-layout:fixed}
+    th,td{border:1px solid var(--line);vertical-align:top;padding:6px}
+    th{background:#fafafa;font-size:12px;color:var(--muted)}
+    th.sun,.sun{color:#dc2626}
+    td.sat .daynum{color:#1d4ed8}
+    td{height:88px;background:#fff}
+    td.today-cell{background:linear-gradient(to bottom, rgba(239,68,68,.06), rgba(255,255,255,1) 36px); box-shadow:inset 0 0 0 2px rgba(239,68,68,.45);}
+    td.is-holiday{background:linear-gradient(to bottom, rgba(220,38,38,.03), rgba(255,255,255,1) 24px)}
+    .cell-head{display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:4px;min-height:30px}
+    .daynum{font-weight:700;font-size:13px;line-height:1}
+    .holiday-name{font-size:9px;line-height:1.15;color:var(--holiday);text-align:right;word-break:break-word;max-width:54px;font-weight:700}
+    .item{font-size:11px;line-height:1.25;padding:3px 5px;border-radius:8px;margin-top:4px;display:block}
+    .hint{font-size:12px;color:var(--muted);margin-top:10px}
+    td.today-cell .daynum{color:#b91c1c;font-weight:800}
+    @media (max-width:700px){
+      .top{align-items:flex-start;flex-direction:column}
+      .centerlabel{min-width:92px}
+      .big-type{font-size:26px}
+      td{height:82px;padding:5px}
+      .holiday-name{font-size:8px;max-width:46px}
+      .calendar-top{align-items:center}
+      .calendar-top-right{min-width:auto}
+      .calendar-actions{justify-content:space-between;overflow-x:auto;padding-bottom:2px}
+      .calendar-actions::-webkit-scrollbar{display:none}
+    }
+  </style>
+</head>
+<body>
+<noscript><div style="padding:12px;background:#fee2e2;color:#991b1b;font-family:sans-serif">このファイルはJavaScriptが有効なSafari/ブラウザで開いてください。</div></noscript>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>ごみカレンダー</h1>
+      <div class="sub">世田谷区 三軒茶屋向け / 祝日収集あり / 年末年始のみ例外</div>
+    </div>
+    <div class="pill">単一HTMLで確認可能</div>
+  </div>
+
+  <div class="card">
+    <div class="label">表示日をずらす</div>
+    <div class="controls">
+      <div class="dayshift">
+        <button id="prevDay">← 前</button>
+        <div id="offsetLabel" class="centerlabel">今日 / 明日</div>
+        <button id="nextDay" class="primary">次 →</button>
+      </div>
+      <button id="todayBtn">今日に戻す</button>
+    </div>
+  </div>
+
+  <div class="grid2 section">
+    <div class="card">
+      <div class="label" id="primaryLabel">今日</div>
+      <div class="big-date" id="primaryDate">-</div>
+      <div class="big-type" id="primaryType">-</div>
+      <div class="meta" id="primaryMeta"></div>
+    </div>
+    <div class="card">
+      <div class="label" id="secondaryLabel">明日</div>
+      <div class="big-date" id="secondaryDate">-</div>
+      <div class="big-type" id="secondaryType">-</div>
+      <div class="meta" id="secondaryMeta"></div>
+    </div>
+  </div>
+
+  <div class="card section">
+    <div class="label">次回予定</div>
+    <div class="next-list" id="nextList"></div>
+  </div>
+
+  <div class="card section">
+    <div class="calendar-head">
+      <div class="calendar-top">
+        <div>
+          <div class="month-title" id="monthTitle">-</div>
+          <div class="sub">月の予定</div>
+        </div>
+        <div class="calendar-top-right">
+          <button id="currentMonthBtn">今月</button>
+        </div>
+      </div>
+      <div class="calendar-actions">
+        <button id="prevMonth">← 前月</button>
+        <select id="yearSelect"></select>
+        <select id="monthSelect"></select>
+        <button id="nextMonth">翌月 →</button>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="chip burn">可燃</span>
+      <span class="chip recycle">資源</span>
+      <span class="chip pet">ペット</span>
+      <span class="chip nonburn">不燃</span>
+      <span class="chip off">休み</span>
+    </div>
+    <div style="overflow:hidden;margin-top:10px">
+      <table id="calendar"></table>
+    </div>
+    <div class="hint">祝日は名称も表示します。年・月プルダウンで先の月まで確認できます。</div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  const JP_DAYS = ['日','月','火','水','木','金','土'];
+  let offset = 0;
+  const now = new Date();
+  let viewYear = now.getFullYear();
+  let viewMonth = now.getMonth() + 1;
+
+  function fmtShort(date){
+    return String(date.getFullYear()).slice(-2) + '/' + String(date.getMonth()+1).padStart(2,'0') + '/' + String(date.getDate()).padStart(2,'0');
+  }
+  function addDays(date,n){ const d = new Date(date); d.setDate(d.getDate()+n); return d; }
+  function nthWeekdayInMonth(date){ return Math.floor((date.getDate()-1)/7)+1; }
+  function dateKey(date){ return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0'); }
+  function isLeap(y){ return (y%4===0 && y%100!==0) || y%400===0; }
+  function vernalEquinoxDay(y){ return Math.floor(20.8431 + 0.242194*(y-1980) - Math.floor((y-1980)/4)); }
+  function autumnEquinoxDay(y){ return Math.floor(23.2488 + 0.242194*(y-1980) - Math.floor((y-1980)/4)); }
+  function nthMonday(year, month, nth){
+    const first = new Date(year, month-1, 1);
+    const day = first.getDay();
+    const firstMonday = 1 + ((8 - day) % 7);
+    return firstMonday + (nth-1)*7;
+  }
+  function substituteHolidayMap(map, year){
+    const keys = Object.keys(map).sort();
+    keys.forEach(function(k){
+      const d = new Date(k+'T00:00:00');
+      if (d.getDay()===0){
+        let sub = addDays(d,1);
+        while(map[dateKey(sub)]) sub = addDays(sub,1);
+        map[dateKey(sub)] = '振替休日';
+      }
+    });
+  }
+  function citizenHolidayMap(map, year){
+    const start = new Date(year,0,2);
+    const end = new Date(year,11,30);
+    for(let d=new Date(start); d<=end; d=addDays(d,1)){
+      const prev = addDays(d,-1), next = addDays(d,1);
+      const k = dateKey(d);
+      if (!map[k] && d.getDay()!==0 && map[dateKey(prev)] && map[dateKey(next)]) {
+        map[k] = '国民の休日';
+      }
+    }
+  }
+  function getHolidayMap(year){
+    const map = {};
+    map[year+'-01-01'] = '元日';
+    map[year+'-02-'+String(11).padStart(2,'0')] = '建国記念の日';
+    map[year+'-02-'+String(23).padStart(2,'0')] = '天皇誕生日';
+    map[year+'-03-'+String(vernalEquinoxDay(year)).padStart(2,'0')] = '春分の日';
+    map[year+'-04-29'] = '昭和の日';
+    map[year+'-05-03'] = '憲法記念日';
+    map[year+'-05-04'] = 'みどりの日';
+    map[year+'-05-05'] = 'こどもの日';
+    map[year+'-08-'+String(11).padStart(2,'0')] = '山の日';
+    map[year+'-09-'+String(nthMonday(year,9,3)).padStart(2,'0')] = '敬老の日';
+    map[year+'-09-'+String(autumnEquinoxDay(year)).padStart(2,'0')] = '秋分の日';
+    map[year+'-10-'+String(nthMonday(year,10,2)).padStart(2,'0')] = 'スポーツの日';
+    map[year+'-11-03'] = '文化の日';
+    map[year+'-11-23'] = '勤労感謝の日';
+    map[year+'-01-'+String(nthMonday(year,1,2)).padStart(2,'0')] = '成人の日';
+    map[year+'-07-'+String(nthMonday(year,7,3)).padStart(2,'0')] = '海の日';
+    substituteHolidayMap(map, year);
+    citizenHolidayMap(map, year);
+    return map;
+  }
+  function getHolidayName(date){
+    const map = getHolidayMap(date.getFullYear());
+    return map[dateKey(date)] || '';
+  }
+  function isYearEndClosed(date){
+    const m = date.getMonth()+1, d = date.getDate();
+    return (m === 1 && d >= 1 && d <= 3) || (m === 12 && d >= 30);
+  }
+  function getTypes(date){
+    const day = date.getDay();
+    const nth = nthWeekdayInMonth(date);
+    const types = [];
+    if (day === 1 || day === 4) types.push('可燃');
+    if (day === 5) types.push('資源');
+    if (day === 2 && (nth === 1 || nth === 3)) types.push('ペット');
+    if (day === 2 && (nth === 2 || nth === 4)) types.push('不燃');
+    return isYearEndClosed(date) ? [] : types;
+  }
+  function getDisplay(date){
+    const holiday = getHolidayName(date);
+    const types = getTypes(date);
+    if (types.length === 0){
+      if ((date.getMonth()+1 === 12 && date.getDate() >= 30) || (date.getMonth()+1 === 1 && date.getDate() <= 3)) {
+        return {text:'収集なし', note:(holiday ? holiday + ' / ' : '') + '年末年始休み'};
+      }
+      return {text:'収集なし', note:holiday || '通常日'};
+    }
+    return {text:types.join(' / '), note:holiday ? ('収集日 / ' + holiday) : '収集日'};
+  }
+  function typeClass(name){
+    if (name.indexOf('可燃') >= 0) return 'burn';
+    if (name.indexOf('資源') >= 0) return 'recycle';
+    if (name.indexOf('ペット') >= 0) return 'pet';
+    if (name.indexOf('不燃') >= 0) return 'nonburn';
+    return 'off';
+  }
+  function humanLabel(n){
+    if (n===0) return '今日 / 明日';
+    if (n>0) return n + '日先 / ' + (n+1) + '日先';
+    return n + '日 / ' + (n+1) + '日';
+  }
+  function findNext(type, fromDate){
+    for(let i=0;i<120;i++){
+      const d = addDays(fromDate, i);
+      if (getTypes(d).includes(type)) return d;
+    }
+    return null;
+  }
+  function renderCards(){
+    document.getElementById('offsetLabel').textContent = humanLabel(offset);
+    const d1 = addDays(new Date(), offset);
+    const d2 = addDays(new Date(), offset+1);
+    const p1 = getDisplay(d1), p2 = getDisplay(d2);
+    const labels = offset === 0 ? ['今日','明日'] : [offset + '日先',(offset+1) + '日先'];
+
+    document.getElementById('primaryLabel').textContent = labels[0];
+    document.getElementById('secondaryLabel').textContent = labels[1];
+    document.getElementById('primaryDate').textContent = fmtShort(d1) + ' (' + JP_DAYS[d1.getDay()] + ')';
+    document.getElementById('secondaryDate').textContent = fmtShort(d2) + ' (' + JP_DAYS[d2.getDay()] + ')';
+    document.getElementById('primaryType').textContent = p1.text;
+    document.getElementById('secondaryType').textContent = p2.text;
+    document.getElementById('primaryType').className = 'big-type ' + typeClass(p1.text);
+    document.getElementById('secondaryType').className = 'big-type ' + typeClass(p2.text);
+    document.getElementById('primaryMeta').textContent = p1.note;
+    document.getElementById('secondaryMeta').textContent = p2.note;
+
+    const items = ['可燃','資源','ペット','不燃'].map(function(t){
+      return {type:t, date:findNext(t, d1)};
+    }).sort(function(a,b){
+      return (a.date ? a.date.getTime() : Infinity) - (b.date ? b.date.getTime() : Infinity);
+    });
+
+    const root = document.getElementById('nextList');
+    root.innerHTML = '';
+    items.forEach(function(item){
+      const el = document.createElement('div');
+      el.className = 'next-item';
+      el.innerHTML = '<div class="next-name">' + item.type + '</div><div class="next-date">' + (item.date ? fmtShort(item.date) + ' (' + JP_DAYS[item.date.getDay()] + ')' : '-') + '</div>';
+      root.appendChild(el);
+    });
+  }
+
+  function buildSelectors(){
+    const y = document.getElementById('yearSelect');
+    const m = document.getElementById('monthSelect');
+    y.innerHTML = '';
+    for(let yr=2025; yr<=2035; yr++){
+      const op = document.createElement('option');
+      op.value = yr;
+      op.textContent = String(yr).slice(-2) + '年';
+      if (yr===viewYear) op.selected = true;
+      y.appendChild(op);
+    }
+    m.innerHTML = '';
+    for(let mm=1; mm<=12; mm++){
+      const op = document.createElement('option');
+      op.value = mm;
+      op.textContent = mm + '月';
+      if (mm===viewMonth) op.selected = true;
+      m.appendChild(op);
+    }
+    y.onchange = function(){ viewYear = +y.value; renderCalendar(); };
+    m.onchange = function(){ viewMonth = +m.value; renderCalendar(); };
+  }
+
+  function renderCalendar(){
+    document.getElementById('monthTitle').textContent = String(viewYear).slice(-2) + '年 ' + viewMonth + '月';
+    document.getElementById('yearSelect').value = String(viewYear);
+    document.getElementById('monthSelect').value = String(viewMonth);
+
+    const table = document.getElementById('calendar');
+    const first = new Date(viewYear, viewMonth-1, 1);
+    const lastDate = new Date(viewYear, viewMonth, 0).getDate();
+    let html = '<thead><tr>';
+    JP_DAYS.forEach(function(d, idx){ html += '<th class="' + (idx===0 ? 'sun' : '') + '">' + d + '</th>'; });
+    html += '</tr></thead><tbody><tr>';
+
+    for(let i=0;i<first.getDay();i++) html += '<td></td>';
+
+    const today = new Date();
+    for(let day=1; day<=lastDate; day++){
+      const dt = new Date(viewYear, viewMonth-1, day);
+      const types = getTypes(dt);
+      const holiday = getHolidayName(dt);
+      const isToday = dt.getFullYear()===today.getFullYear() && dt.getMonth()===today.getMonth() && dt.getDate()===today.getDate();
+      const cls = [];
+      if (dt.getDay()===0) cls.push('sun');
+      if (dt.getDay()===6) cls.push('sat');
+      if (holiday) cls.push('is-holiday');
+      if (isToday) cls.push('today-cell');
+
+      html += '<td class="' + cls.join(' ') + '">';
+      html += '<div class="cell-head">';
+      html += '<div class="daynum">' + day + '</div>';
+      html += '<div class="holiday-name">' + (holiday || '') + '</div>';
+      html += '</div>';
+      if (isYearEndClosed(dt)) html += '<span class="item off">休み</span>';
+      types.forEach(function(t){ html += '<span class="item ' + typeClass(t) + '">' + t + '</span>'; });
+      html += '</td>';
+      if (dt.getDay()===6 && day !== lastDate) html += '</tr><tr>';
+    }
+
+    const tail = (7 - new Date(viewYear, viewMonth-1, lastDate).getDay() - 1);
+    for(let i=0;i<tail;i++) html += '<td></td>';
+    html += '</tr></tbody>';
+    table.innerHTML = html;
+  }
+
+  document.getElementById('prevDay').onclick = function(){ offset -= 1; renderCards(); };
+  document.getElementById('nextDay').onclick = function(){ offset += 1; renderCards(); };
+  document.getElementById('todayBtn').onclick = function(){ offset = 0; renderCards(); };
+  document.getElementById('prevMonth').onclick = function(){ viewMonth -= 1; if(viewMonth<1){viewMonth=12;viewYear-=1;} renderCalendar(); };
+  document.getElementById('nextMonth').onclick = function(){ viewMonth += 1; if(viewMonth>12){viewMonth=1;viewYear+=1;} renderCalendar(); };
+  document.getElementById('currentMonthBtn').onclick = function(){ const t = new Date(); viewYear=t.getFullYear(); viewMonth=t.getMonth()+1; renderCalendar(); };
+
+  buildSelectors();
+  renderCards();
+  renderCalendar();
+});
+</script>
+</body>
+</html>
